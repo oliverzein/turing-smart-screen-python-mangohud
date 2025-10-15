@@ -1,0 +1,5 @@
+# 1) copy below line to /etc/udev/rules.d/99-usb-service.rules
+# 2) reload udev rules with sudo udevadm control --reload-rules
+# 3) trigger udev rules with sudo udevadm trigger
+
+ACTION=="add", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="5722", TAG+="systemd", ENV{SYSTEMD_WANTS}="turing-smart-screen-python.service"

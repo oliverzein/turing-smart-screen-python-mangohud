@@ -378,14 +378,14 @@ class MangoHudFPS(CustomDataSource):
         if not self.connected:
             # Not connected - either scanning or no game found
             if self.pid is None:
-                return "No Game"  # 7 chars
+                return "---"  # 7 chars
             else:
                 return "Connecting"  # 10 chars (will retry connection)
         
         # Connected and have FPS data
         # Format: "123 FPS" with fixed width to prevent ghosting
         # Use >3d to ensure consistent width (e.g., " 12", "123")
-        return f"{int(self.current_fps):>3d} FPS"
+        return f"{int(self.current_fps):>3d}"
     
     def last_values(self) -> List[float]:
         """
@@ -429,13 +429,14 @@ class MangoHud1PercentLow(CustomDataSource):
         fps_instance = MangoHudFPS()
         
         if not fps_instance.connected:
-            return "No Game"
+            return "---"
         
         if len(fps_instance.frametime_samples) < 100:
-            return "Collecting..."  # Need more samples
+            return "---"  # Need more samples
         
         # Format: "1%: 95 FPS"
-        return f"1%: {int(fps_instance.one_percent_low_fps):>3d} FPS"
+        #return f"1%: {int(fps_instance.one_percent_low_fps):>3d} FPS"
+        return f"{int(fps_instance.one_percent_low_fps):>3d}"
     
     def last_values(self) -> List[float]:
         """Not implemented for 1% low - would need history tracking."""
@@ -475,13 +476,14 @@ class MangoHudZeroOnePercentLow(CustomDataSource):
         fps_instance = MangoHudFPS()
         
         if not fps_instance.connected:
-            return "No Game"
+            return "---"
         
         if len(fps_instance.frametime_samples) < 1000:
-            return "Collecting..."  # Need more samples
+            return "---"  # Need more samples
         
         # Format: "0.1%: 85 FPS"
-        return f"0.1%: {int(fps_instance.zero_one_percent_low_fps):>2d} FPS"
+        #return f"0.1%: {int(fps_instance.zero_one_percent_low_fps):>2d} FPS"
+        return f"{int(fps_instance.zero_one_percent_low_fps):>3d}"
     
     def last_values(self) -> List[float]:
         """Not implemented for 0.1% low - would need history tracking."""

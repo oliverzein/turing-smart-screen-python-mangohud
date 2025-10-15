@@ -15,12 +15,34 @@ static_images:
 static_text:
   FPS_LABEL:
     TEXT: "FPS:"
-    X: 124
-    Y: 331
+    X: 150
+    Y: 340
     FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
     FONT_SIZE: 23
     FONT_COLOR: 255, 255, 255
     BACKGROUND_COLOR: 132, 154, 165
+    ALIGN: left
+  FPS_LABEL_1LOW:
+    TEXT: "1.0%:"
+    X: 136
+    Y: 370
+    WIDTH: 100
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 132, 154, 165
+    
+  FPS_LABEL_01LOW:
+    TEXT: "0.1%:"
+    X: 136
+    Y: 400
+    WIDTH: 70
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 132, 154, 165
+    ALIGN: right
+    
 STATS:
   CPU:
     PERCENTAGE:
@@ -173,27 +195,33 @@ STATS:
     MangoHudFPS:
       TEXT:
         SHOW: True
-        X: 180
-        Y: 331
-        FONT: geforce/GeForce-Bold.ttf
-        FONT_SIZE: 20
+        X: 212
+        Y: 341
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
         FONT_COLOR: 255, 255, 255
-        BACKGROUND_IMAGE: background.png
+        BACKGROUND_COLOR: 132, 154, 165
     MangoHud1PercentLow:
       TEXT:
         SHOW: True
-        X: 155
-        Y: 358
-        FONT: geforce/GeForce-Bold.ttf
-        FONT_SIZE: 20
+        X: 212
+        Y: 371
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
         FONT_COLOR: 255, 255, 255
-        BACKGROUND_IMAGE: background.png
+        BACKGROUND_COLOR: 132, 154, 165
     MangoHudZeroOnePercentLow:
       TEXT:
         SHOW: True
-        X: 155
-        Y: 376
-        FONT: geforce/GeForce-Bold.ttf
-        FONT_SIZE: 20
+        X: 212
+        Y: 401
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
         FONT_COLOR: 255, 255, 255
-        BACKGROUND_IMAGE: background.png
+        BACKGROUND_COLOR: 132, 154, 165
