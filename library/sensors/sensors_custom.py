@@ -165,6 +165,14 @@ class MangoHudFPS(CustomDataSource):
         self.connected = False
         self.last_discovery_time = 0.0
         self.discovery_interval = 5.0  # Re-scan for sockets every 5 seconds when not connected
+        
+        # For 1% low FPS calculation
+        self.last_frame_count: int = 0
+        self.last_sample_time: float = 0.0
+        self.frametime_samples: List[float] = []  # Store individual frame times
+        self.max_samples: int = 1000  # Store last 1000 frame times (~8 seconds at 120 FPS)
+        self.one_percent_low_fps: float = 0.0
+        self.zero_one_percent_low_fps: float = 0.0
     
     def find_mangohud_socket(self) -> Optional[int]:
         """
@@ -286,6 +294,30 @@ class MangoHudFPS(CustomDataSource):
             # '=' means native byte order, standard size
             fps, frametime, frame_count = struct.unpack('=dfI', latest_data)
             
+            # Calculate individual frame times from frame count delta
+            current_time = time.time()
+            if self.last_frame_count > 0 and self.last_sample_time > 0:
+                frames_rendered = frame_count - self.last_frame_count
+                time_elapsed = current_time - self.last_sample_time
+                
+                if frames_rendered > 0 and time_elapsed > 0:
+                    # Calculate average frametime for this sample period
+                    avg_frametime_ms = (time_elapsed / frames_rendered) * 1000.0
+                    
+                    # Add one sample per frame rendered (approximation)
+                    # This gives us ~120 samples per second instead of just 1
+                    for _ in range(min(frames_rendered, 200)):  # Cap at 200 to avoid memory issues
+                        self.frametime_samples.append(avg_frametime_ms)
+                        if len(self.frametime_samples) > self.max_samples:
+                            self.frametime_samples.pop(0)
+                    
+                    # Calculate 1% and 0.1% low FPS
+                    self._calculate_low_fps()
+            
+            # Update tracking variables
+            self.last_frame_count = frame_count
+            self.last_sample_time = current_time
+            
             # Use FPS directly from MangoHud (already smoothed by fps_sampling_period)
             self.current_fps = fps
             self.current_frametime = frametime
@@ -300,6 +332,29 @@ class MangoHudFPS(CustomDataSource):
             # Connection error, disconnect and will retry
             self.disconnect()
             return False
+    
+    def _calculate_low_fps(self):
+        """
+        Calculate 1% low and 0.1% low FPS from collected frame time samples.
+        """
+        if len(self.frametime_samples) < 100:
+            # Need at least 100 samples for meaningful 1% low
+            return
+        
+        # Sort frame times (worst to best)
+        sorted_frametimes = sorted(self.frametime_samples, reverse=True)
+        
+        # Calculate 1% low (worst 1% of frames)
+        one_percent_count = max(1, len(sorted_frametimes) // 100)
+        worst_1_percent = sorted_frametimes[:one_percent_count]
+        avg_1_percent_frametime = sum(worst_1_percent) / len(worst_1_percent)
+        self.one_percent_low_fps = 1000.0 / avg_1_percent_frametime if avg_1_percent_frametime > 0 else 0.0
+        
+        # Calculate 0.1% low (worst 0.1% of frames)
+        zero_one_percent_count = max(1, len(sorted_frametimes) // 1000)
+        worst_0_1_percent = sorted_frametimes[:zero_one_percent_count]
+        avg_0_1_percent_frametime = sum(worst_0_1_percent) / len(worst_0_1_percent)
+        self.zero_one_percent_low_fps = 1000.0 / avg_0_1_percent_frametime if avg_0_1_percent_frametime > 0 else 0.0
     
     def as_numeric(self) -> float:
         """
@@ -338,3 +393,96 @@ class MangoHudFPS(CustomDataSource):
         Returns 60 samples (1 minute of history at 1 sample/second).
         """
         return self.last_val
+
+
+# MangoHud 1% Low FPS - displays the 1% low FPS metric
+class MangoHud1PercentLow(CustomDataSource):
+    """
+    Custom data source that displays 1% low FPS from MangoHud data.
+    
+    1% low FPS represents the average FPS of the worst 1% of frames,
+    which is a better indicator of stuttering and frame drops than average FPS.
+    
+    This class uses the singleton MangoHudFPS instance to access the calculated
+    1% low FPS value.
+    
+    Usage in theme.yaml:
+        CUSTOM:
+          INTERVAL: 1
+          MangoHud1PercentLow:
+            TEXT:
+              SHOW: True
+              X: 10
+              Y: 40
+              FONT_SIZE: 16
+              FONT_COLOR: 255, 200, 0
+    """
+    
+    def as_numeric(self) -> float:
+        """Return 1% low FPS as numeric value."""
+        # Get the singleton MangoHudFPS instance
+        fps_instance = MangoHudFPS()
+        return fps_instance.one_percent_low_fps
+    
+    def as_string(self) -> str:
+        """Return formatted 1% low FPS string."""
+        fps_instance = MangoHudFPS()
+        
+        if not fps_instance.connected:
+            return "No Game"
+        
+        if len(fps_instance.frametime_samples) < 100:
+            return "Collecting..."  # Need more samples
+        
+        # Format: "1%: 95 FPS"
+        return f"1%: {int(fps_instance.one_percent_low_fps):>3d} FPS"
+    
+    def last_values(self) -> List[float]:
+        """Not implemented for 1% low - would need history tracking."""
+        return [math.nan] * 60
+
+
+# MangoHud 0.1% Low FPS - displays the 0.1% low FPS metric
+class MangoHudZeroOnePercentLow(CustomDataSource):
+    """
+    Custom data source that displays 0.1% low FPS from MangoHud data.
+    
+    0.1% low FPS represents the average FPS of the worst 0.1% of frames,
+    showing the absolute worst frame drops.
+    
+    This class uses the singleton MangoHudFPS instance to access the calculated
+    0.1% low FPS value.
+    
+    Usage in theme.yaml:
+        CUSTOM:
+          INTERVAL: 1
+          MangoHudZeroOnePercentLow:
+            TEXT:
+              SHOW: True
+              X: 10
+              Y: 60
+              FONT_SIZE: 16
+              FONT_COLOR: 255, 100, 0
+    """
+    
+    def as_numeric(self) -> float:
+        """Return 0.1% low FPS as numeric value."""
+        fps_instance = MangoHudFPS()
+        return fps_instance.zero_one_percent_low_fps
+    
+    def as_string(self) -> str:
+        """Return formatted 0.1% low FPS string."""
+        fps_instance = MangoHudFPS()
+        
+        if not fps_instance.connected:
+            return "No Game"
+        
+        if len(fps_instance.frametime_samples) < 1000:
+            return "Collecting..."  # Need more samples
+        
+        # Format: "0.1%: 85 FPS"
+        return f"0.1%: {int(fps_instance.zero_one_percent_low_fps):>2d} FPS"
+    
+    def last_values(self) -> List[float]:
+        """Not implemented for 0.1% low - would need history tracking."""
+        return [math.nan] * 60

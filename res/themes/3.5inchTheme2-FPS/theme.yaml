@@ -16,7 +16,7 @@ static_text:
   FPS_LABEL:
     TEXT: "FPS:"
     X: 124
-    Y: 411
+    Y: 331
     FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
     FONT_SIZE: 23
     FONT_COLOR: 255, 255, 255
@@ -174,8 +174,26 @@ STATS:
       TEXT:
         SHOW: True
         X: 180
-        Y: 411
-        FONT: roboto-mono/RobotoMono-Bold.ttf
+        Y: 331
+        FONT: geforce/GeForce-Bold.ttf
         FONT_SIZE: 20
-        FONT_COLOR: 0, 255, 0
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_IMAGE: background.png
+    MangoHud1PercentLow:
+      TEXT:
+        SHOW: True
+        X: 155
+        Y: 358
+        FONT: geforce/GeForce-Bold.ttf
+        FONT_SIZE: 20
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_IMAGE: background.png
+    MangoHudZeroOnePercentLow:
+      TEXT:
+        SHOW: True
+        X: 155
+        Y: 376
+        FONT: geforce/GeForce-Bold.ttf
+        FONT_SIZE: 20
+        FONT_COLOR: 255, 255, 255
         BACKGROUND_IMAGE: background.png
