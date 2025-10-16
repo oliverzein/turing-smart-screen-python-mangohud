@@ -385,7 +385,7 @@ class MangoHudFPS(CustomDataSource):
         # Connected and have FPS data
         # Format: "123 FPS" with fixed width to prevent ghosting
         # Use >3d to ensure consistent width (e.g., " 12", "123")
-        return f"{int(self.current_fps):>3d}"
+        return f"{math.ceil(self.current_fps):>3d}"
     
     def last_values(self) -> List[float]:
         """
@@ -436,7 +436,7 @@ class MangoHud1PercentLow(CustomDataSource):
         
         # Format: "1%: 95 FPS"
         #return f"1%: {int(fps_instance.one_percent_low_fps):>3d} FPS"
-        return f"{int(fps_instance.one_percent_low_fps):>3d}"
+        return f"{math.ceil(fps_instance.one_percent_low_fps):>3d}"
     
     def last_values(self) -> List[float]:
         """Not implemented for 1% low - would need history tracking."""
@@ -483,7 +483,7 @@ class MangoHudZeroOnePercentLow(CustomDataSource):
         
         # Format: "0.1%: 85 FPS"
         #return f"0.1%: {int(fps_instance.zero_one_percent_low_fps):>2d} FPS"
-        return f"{int(fps_instance.zero_one_percent_low_fps):>3d}"
+        return f"{math.ceil(fps_instance.zero_one_percent_low_fps):>3d}"
     
     def last_values(self) -> List[float]:
         """Not implemented for 0.1% low - would need history tracking."""
