@@ -18,21 +18,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# Configure logging format
-import locale
-import logging
-from logging.handlers import RotatingFileHandler
+# This file is used to check if Python version used is compatible
+import os
+import sys
 
-# use current locale for date/time formatting in logs
-locale.setlocale(locale.LC_ALL, '')
+# Oldest / newest version supported
+MIN_PYTHON = (3, 9)
+MAX_PYTHON = (3, 13)
 
-logging.basicConfig(  # format='%(asctime)s [%(levelname)s] %(message)s in %(pathname)s:%(lineno)d',
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        RotatingFileHandler("log.log", maxBytes=1000000, backupCount=0),  # Log in textfile max 1MB
-        logging.StreamHandler()  # Log also in console
-    ],
-    datefmt='%x %X')
 
-logger = logging.getLogger('turing')
-logger.setLevel(logging.DEBUG)  # Lowest log level : print all messages
+def check_python_version():
+    current_version = sys.version_info[:2]
+
+    if current_version < MIN_PYTHON or current_version > MAX_PYTHON:
+        print(f"[ERROR] Python {current_version[0]}.{current_version[1]} is not supported by this program. "
+              f"Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}-{MAX_PYTHON[0]}.{MAX_PYTHON[1]} required.")
+        try:
+            sys.exit(0)
+        except:
+            os._exit(0)
