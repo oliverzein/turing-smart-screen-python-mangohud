@@ -38,7 +38,7 @@ def main():
     # Create FPS sensor instance
     fps_sensor = MangoHudFPS()
     
-    print(f"{'Time':>8} | {'Status':>12} | {'FPS':>8} | {'Frametime':>10} | {'Frames':>10}")
+    print(f"{'Time':>8} | {'Status':>12} | {'FPS':>8} | {'1% Low':>10} | {'0.1% Low':>10}")
     print("-" * 70)
     
     update_count = 0
@@ -47,10 +47,8 @@ def main():
             # Get FPS data (this triggers auto-discovery and connection)
             fps_numeric = fps_sensor.as_numeric()
             fps_string = fps_sensor.as_string()
-            
-            # Get additional data
-            frametime = fps_sensor.current_frametime
-            frame_count = fps_sensor.frame_count
+            one_percent_low_fps = fps_sensor.one_percent_low_fps
+            zero_one_percent_low_fps = fps_sensor.zero_one_percent_low_fps            
             
             # Determine status
             if fps_sensor.connected:
@@ -62,7 +60,7 @@ def main():
             
             # Display
             timestamp = time.strftime("%H:%M:%S")
-            print(f"{timestamp:>8} | {status:>12} | {fps_numeric:>8.1f} | {frametime:>8.2f} ms | {frame_count:>10d}", end='\r')
+            print(f"{timestamp:>8} | {status:>12} | {fps_numeric:>8.1f} | {one_percent_low_fps:>10.1f} | {zero_one_percent_low_fps:>10.1f}", end='\r')
             
             update_count += 1
             
