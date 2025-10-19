@@ -224,7 +224,7 @@ Auto-discovery via /proc/net/unix
        ↓
 MangoHudFPS class connects
        ↓
-Reads 16-byte packets (fps, frametime, frame_count)
+Reads 88-byte packets (full metrics including FPS, temps, loads, 1% low, etc.)
        ↓
 Updates display every INTERVAL seconds
 ```

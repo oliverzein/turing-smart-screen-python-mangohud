@@ -268,12 +268,12 @@ class MangoHudFPS(CustomDataSource):
             while True:
                 try:
                     # Non-blocking read
-                    data = self.sock.recv(84) # Read up to 84 bytes
+                    data = self.sock.recv(88) # Read up to 88 bytes
                     if len(data) == 0:
                         # Connection closed
                         self.disconnect()
                         return False
-                    elif len(data) != 84: # we expect exactly 84 bytes of data
+                    elif len(data) != 88: # we expect exactly 88 bytes of data
                         # Partial data, connection issue
                         if latest_data is None:
                             self.disconnect()
@@ -289,16 +289,16 @@ class MangoHudFPS(CustomDataSource):
                 return True
             
             # Unpack full metrics packet
-            # Format: double, 3 floats, 7 ints, 7 floats, uint64
-            # d=double(8), fff=3 floats(12), iiiiiii=7 ints(28), fffffff=7 floats(28), Q=uint64(8) = 84 bytes
-            values = struct.unpack('=dfffiiiiiiifffffffQ', latest_data)
+            # Format: double, 3 floats, 8 ints, 7 floats, uint64
+            # d=double(8), fff=3 floats(12), iiiiiiii=8 ints(32), fffffff=7 floats(28), Q=uint64(8) = 88 bytes
+            values = struct.unpack('=dfffiiiiiiiifffffffQ', latest_data)
 
             fps = values[0]
             
             # Use FPS directly from MangoHud (already smoothed by fps_sampling_period)
             self.current_fps = fps
-            self.one_percent_low_fps = values[15]
-            self.zero_one_percent_low_fps = values[16]
+            self.one_percent_low_fps = values[16]  # Shifted by 1 due to gpu_junction_temp
+            self.zero_one_percent_low_fps = values[17]  # Shifted by 1 due to gpu_junction_temp
 
             # Store value for line graph history
             self.last_val.append(fps)
