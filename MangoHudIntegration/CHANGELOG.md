@@ -1,5 +1,63 @@
 # MangoHud Integration Changelog
 
+## 2025-10-23 - Migrate to shared MangoSocketReader (48-byte v1.0)
+
+### Summary
+
+- Replaced bespoke MangoHud socket reader with the shared `MangoSocketReader` library.
+- Protocol standardized to 48-byte payload (`'=dfffiiiiiff'`, version `1.0`).
+- Updated `library/sensors/sensors_custom.py` to use `mangosocketreader.client.MangoHudClient` with robust lazy init and logging.
+- Updated service setup instructions to install the shared library into the service venv.
+
+### Changes
+
+1. **library/sensors/sensors_custom.py**
+   - Removed manual `/proc/net/unix` scanning and raw `recv(88)` parsing.
+   - Added `MangoHudClient` usage for auto-discovery and non-blocking reads.
+   - Ensured safe defaults and lazy client construction in `__init__()`, `connect()`, `read_fps_data()`, and `as_string()`.
+   - Added debug logs to trace client initialization, connection, and reads.
+   - Exposes `connected` and `pid` for compatibility with `test_mangohud_fps.py`.
+
+2. **Service dependency**
+   - Ensure the service interpreter can import the library:
+     ```bash
+     sudo -u <user> /path/to/.venv/bin/python3 -m pip install -e /path/to/MangoSocketReader
+     # Verify
+     sudo -u <user> /path/to/.venv/bin/python3 -c "import mangosocketreader, struct; import mangosocketreader.protocol as p; print(p.PACKET_VERSION, struct.calcsize(p.PACKET_FORMAT))"
+     # Expect: 1.0 48
+     ```
+   - Optionally pin in `requirements.txt`:
+     ```
+     mangosocketreader @ file:///absolute/path/to/MangoSocketReader
+     ```
+
+3. **Docs**
+   - This changelog supersedes prior references to the 88-byte format for this integration.
+   - Note: The 48-byte payload includes `fps` and `fps_1_percent_low`. `0.1% low` is not present in this payload and will show as 0 or `---` unless added by the server in a future version.
+
+### Testing
+
+Run the included test script (works with the new client):
+
+```bash
+python MangoHudIntegration/test_mangohud_fps.py
+```
+
+Expected output (example):
+
+```
+Time     | Status       | FPS      | 1% Low   | 0.1% Low
+----------------------------------------------------------------------
+12:34:56 | PID 12345    | 120.0    | 100.5    | 0.0
+```
+
+### Notes
+
+- If the service doesn’t show values but the test does, ensure the library is installed with the same interpreter the service uses (`python -m pip ...`).
+- Optional: move `StartLimitIntervalSec`/`StartLimitBurst` to the `[Unit]` section in the systemd unit to silence warnings.
+
+---
+
 ## 2025-10-18 - Updated to 88-byte packet format
 
 ### Changes

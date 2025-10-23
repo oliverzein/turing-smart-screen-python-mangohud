@@ -24,9 +24,8 @@
 
 import math
 import platform
-import socket
-import struct
 import time
+import logging
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
@@ -86,7 +85,8 @@ class ExampleCustomNumericData(CustomDataSource):
 
     def last_values(self) -> List[float]:
         # List of last numeric values will be used for plot graph
-        return self.last_val
+        # Return provider FPS history (unitless)
+        return self.provider.get_history('fps')
 
 
 # Example for a custom data class that only has text values
@@ -102,6 +102,122 @@ class ExampleCustomTextOnlyData(CustomDataSource):
     def last_values(self) -> List[float]:
         # If a custom data class only has text values, it won't be possible to display line graph
         pass
+
+
+# Shared MangoHud metrics provider (singleton)
+class MangoHudMetrics:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(MangoHudMetrics, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        if getattr(self, "_init_done", False):
+            return
+        self._init_done = True
+
+        self._logger = logging.getLogger(__name__ + ".MangoHudMetrics")
+        self.client = None
+        self.connected = False
+        self.pid = None
+        self.metrics = {}
+        self.last_update_ts = 0.0
+        # Pre-allocate histories (60 samples)
+        self.histories = {
+            'fps': [math.nan] * 60,
+            'gpu_load': [math.nan] * 60,
+            'gpu_temp': [math.nan] * 60,
+            'gpu_junction_temp': [math.nan] * 60,
+            'gpu_power': [math.nan] * 60,
+        }
+
+        # Try import client lazily; tolerate absence
+        try:
+            from mangosocketreader.client import MangoHudClient
+            self.client = MangoHudClient()
+        except Exception as e:
+            self._logger.debug(f"MangoHudMetrics: client import failed (lazy retry later): {e}")
+
+    @staticmethod
+    def instance():
+        return MangoHudMetrics()
+
+    def ensure_client(self) -> bool:
+        if self.client is None:
+            try:
+                from mangosocketreader.client import MangoHudClient
+                self.client = MangoHudClient()
+            except Exception as e:
+                self._logger.debug(f"ensure_client(): failed: {e}")
+                return False
+        return True
+
+    def ensure_connected(self) -> bool:
+        if not self.ensure_client():
+            return False
+        if self.connected:
+            return True
+        try:
+            self.connected = bool(self.client.connect())
+            if self.connected:
+                try:
+                    self.pid = self.client.get_pid()
+                except Exception:
+                    self.pid = None
+        except Exception as e:
+            self._logger.debug(f"ensure_connected(): connect failed: {e}")
+            self.connected = False
+        return self.connected
+
+    def disconnect(self):
+        try:
+            if self.client is not None:
+                self.client.disconnect()
+        finally:
+            self.connected = False
+            self.pid = None
+
+    def update(self) -> bool:
+        """Fetch latest metrics once per call; update histories."""
+        if not self.connected:
+            return False
+        # Small guard to avoid excessive reads if called multiple times per tick
+        now = time.time()
+        if now - self.last_update_ts < 0.01:
+            return bool(self.metrics)
+        self.last_update_ts = now
+
+        try:
+            m = self.client.read_metrics()
+        except Exception as e:
+            self._logger.debug(f"update(): read_metrics failed: {e}")
+            m = None
+        if not m:
+            return False
+        self.metrics = m
+
+        # Append to histories if present
+        for k in self.histories.keys():
+            val = m.get(k)
+            if val is None:
+                val = math.nan
+            self.histories[k].append(float(val))
+            self.histories[k].pop(0)
+        return True
+
+    def get(self, field: str):
+        return self.metrics.get(field)
+
+    def get_history(self, field: str) -> List[float]:
+        return self.histories.get(field, [math.nan] * 60)
+
+    def is_connected(self) -> bool:
+        return self.connected
+
+    def get_pid(self) -> Optional[int]:
+        return self.pid
 
 
 # MangoHud FPS data class - connects to MangoHud FPS socket and displays game FPS
@@ -157,75 +273,34 @@ class MangoHudFPS(CustomDataSource):
         if MangoHudFPS._initialized:
             return
         
-        MangoHudFPS._initialized = True
-        
-        self.sock: Optional[socket.socket] = None
-        self.pid: Optional[int] = None
-        
+        # Set safe defaults first so object always has expected attributes
+        self.client = None
+        self._logger = logging.getLogger(__name__ + ".MangoHudFPS")
         self.last_val = [math.nan] * 60  # Store last 60 FPS values for line graph
         self.connected = False
+        self.pid: Optional[int] = None
         self.last_discovery_time = 0.0
         self.discovery_interval = 5.0  # Re-scan for sockets every 5 seconds when not connected
-        
         # metrics
         self.current_fps: float = 0.0
         self.one_percent_low_fps: float = 0.0
         self.zero_one_percent_low_fps: float = 0.0
-    
-    def find_mangohud_socket(self) -> Optional[int]:
-        """
-        Auto-discover MangoHud FPS socket by scanning /proc/net/unix.
-        Returns the PID of the first MangoHud game found, or None.
-        """
-        try:
-            with open('/proc/net/unix', 'r') as f:
-                for line in f:
-                    if 'mangohud-fps-' in line:
-                        # Extract PID from socket name
-                        # Line format: "... @mangohud-fps-<pid> ..."
-                        parts = line.split('mangohud-fps-')
-                        if len(parts) > 1:
-                            # Get the PID (first token after the prefix)
-                            pid_str = parts[1].strip().split()[0]
-                            try:
-                                return int(pid_str)
-                            except ValueError:
-                                continue
-        except (FileNotFoundError, PermissionError):
-            pass
-        return None
-    
+        # Shared provider
+        self.provider = MangoHudMetrics.instance()
+        MangoHudFPS._initialized = True
+
     def connect(self) -> bool:
-        """Connect to MangoHud FPS socket for the current PID."""
-        if self.connected or self.pid is None:
-            return self.connected
-        
-        try:
-            self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            # Abstract namespace socket (leading null byte)
-            socket_path = f"\0mangohud-fps-{self.pid}"
-            self.sock.connect(socket_path)
-            self.sock.setblocking(False)  # Non-blocking mode for fast buffer draining
-            self.connected = True
+        """Connect using shared MangoSocketReader client (auto-discovers)."""
+        if self.connected:
             return True
-        except (ConnectionRefusedError, FileNotFoundError, OSError):
-            self.connected = False
-            if self.sock:
-                try:
-                    self.sock.close()
-                except:
-                    pass
-                self.sock = None
-            return False
-    
+        ok = self.provider.ensure_connected()
+        self.connected = self.provider.is_connected()
+        self.pid = self.provider.get_pid()
+        return ok
+
     def disconnect(self):
         """Disconnect from MangoHud FPS socket."""
-        if self.sock:
-            try:
-                self.sock.close()
-            except:
-                pass
-            self.sock = None
+        self.provider.disconnect()
         self.connected = False
         self.pid = None
     
@@ -236,79 +311,29 @@ class MangoHudFPS(CustomDataSource):
         """
         current_time = time.time()
         
-        # Only re-scan if not connected and enough time has passed
+        # Only attempt connect if not connected and enough time has passed
         if not self.connected and (current_time - self.last_discovery_time) >= self.discovery_interval:
             self.last_discovery_time = current_time
-            
-            # Find any MangoHud socket
-            pid = self.find_mangohud_socket()
-            if pid:
-                if pid != self.pid:
-                    # New game detected, disconnect from old one
-                    self.disconnect()
-                    self.pid = pid
-                # Try to connect
-                self.connect()
+            self._logger.debug("discover_and_connect(): attempting provider.ensure_connected()")
+            self.connect()
     
     def read_fps_data(self) -> bool:
         """
-        Read FPS data packet from socket.
-        Drains the socket buffer to get the most recent packet.
+        Read FPS data using MangoSocketReader client.
+        Drains the socket buffer via library to get the most recent packet.
         Returns True if data was successfully read, False otherwise.
         """
         if not self.connected:
+            self._logger.debug("read_fps_data(): not connected")
             return False
-        
-        try:
-            # Drain the socket buffer to get the most recent packet
-            # MangoHud broadcasts every frame (~120 Hz), but we only read once per second
-            # Socket is non-blocking, so this drains instantly
-            latest_data = None
-            
-            while True:
-                try:
-                    # Non-blocking read
-                    data = self.sock.recv(88) # Read up to 88 bytes
-                    if len(data) == 0:
-                        # Connection closed
-                        self.disconnect()
-                        return False
-                    elif len(data) != 88: # we expect exactly 88 bytes of data
-                        # Partial data, connection issue
-                        if latest_data is None:
-                            self.disconnect()
-                            return False
-                        break
-                    latest_data = data
-                except BlockingIOError:
-                    # No more data available in buffer (this is normal)
-                    break
-            
-            # If we didn't read any packets, keep last values
-            if latest_data is None:
-                return True
-            
-            # Unpack full metrics packet
-            # Format: double, 3 floats, 8 ints, 7 floats, uint64
-            # d=double(8), fff=3 floats(12), iiiiiiii=8 ints(32), fffffff=7 floats(28), Q=uint64(8) = 88 bytes
-            values = struct.unpack('=dfffiiiiiiiifffffffQ', latest_data)
-
-            fps = values[0]
-            
-            # Use FPS directly from MangoHud (already smoothed by fps_sampling_period)
-            self.current_fps = fps
-            self.one_percent_low_fps = values[16]  # Shifted by 1 due to gpu_junction_temp
-            self.zero_one_percent_low_fps = values[17]  # Shifted by 1 due to gpu_junction_temp
-
-            # Store value for line graph history
-            self.last_val.append(fps)
-            self.last_val.pop(0)
-            
-            return True
-        except (socket.error, struct.error) as e:
-            # Connection error, disconnect and will retry
-            self.disconnect()
+        ok = self.provider.update()
+        if not ok:
+            self._logger.debug("read_fps_data(): provider has no metrics yet")
             return False
+        fps = float(self.provider.get('fps') or 0.0)
+        self.current_fps = fps
+        self.one_percent_low_fps = float(self.provider.get('fps_1_percent_low') or 0.0)
+        return True
     
     def as_numeric(self) -> float:
         """
@@ -316,11 +341,13 @@ class MangoHudFPS(CustomDataSource):
         This method is called by the framework on every update cycle.
         """
         # Try to discover and connect if not connected
+        self._logger.debug("as_numeric(): tick; connected=%s pid=%s", self.connected, self.pid)
         self.discover_and_connect()
         
         # Read FPS data if connected
         if self.connected:
-            self.read_fps_data()
+            ok = self.read_fps_data()
+            self._logger.debug("as_numeric(): read_fps_data ok=%s fps=%.2f", ok, self.current_fps)
         
         return self.current_fps
     
@@ -329,12 +356,23 @@ class MangoHudFPS(CustomDataSource):
         Return formatted FPS string for text display.
         Uses fixed width to prevent ghosting effect.
         """
+        # If client not yet constructed (early call), try to build it; otherwise show placeholder
+        # Ensure connection even if only as_string() is polled by the framework
         if not self.connected:
+            self._logger.debug("as_string(): not connected -> attempting discover_and_connect()")
+            self.discover_and_connect()
+
+        if not self.provider.is_connected():
             # Not connected - either scanning or no game found
-            if self.pid is None:
-                return "---"  # 7 chars
-            else:
-                return "Connecting"  # 10 chars (will retry connection)
+            return "---"  # 7 chars
+        
+        # Optionally refresh a sample so text reflects latest FPS even without as_numeric()
+        try:
+            if self.connected:
+                ok = self.read_fps_data()
+                self._logger.debug("as_string(): post-connect read ok=%s fps=%.2f", ok, self.current_fps)
+        except Exception as e:
+            self._logger.debug(f"as_string(): read_fps_data raised: {e}")
         
         # Connected and have FPS data
         # Format: "123 FPS" with fixed width to prevent ghosting
@@ -392,6 +430,84 @@ class MangoHud1PercentLow(CustomDataSource):
     def last_values(self) -> List[float]:
         """Not implemented for 1% low - would need history tracking."""
         return [math.nan] * 60
+
+
+# Additional MangoHud sensors using provider (unitless, integer formatting)
+class _MangoHudBaseSensor(CustomDataSource):
+    def __init__(self, field: str, history: bool = False):
+        self.provider = MangoHudMetrics.instance()
+        self.field = field
+        self.use_history = history
+        self._last_values = [math.nan] * 60 if history else None
+
+    def _ensure(self):
+        self.provider.ensure_connected()
+        self.provider.update()
+
+    def as_numeric(self) -> float:
+        self._ensure()
+        v = self.provider.get(self.field)
+        try:
+            return float(v) if v is not None else 0.0
+        except Exception:
+            return 0.0
+
+    def as_string(self) -> str:
+        v = self.as_numeric()
+        try:
+            return f"{int(round(v)):>3d}"
+        except Exception:
+            return "---"
+
+    def last_values(self) -> List[float]:
+        if not self.use_history:
+            return [math.nan] * 60
+        return self.provider.get_history(self.field)
+
+
+class MangoHudFPSAvg(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('fps_avg', history=False)
+
+
+class MangoHudGPULoad(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('gpu_load', history=True)
+
+
+class MangoHudGPUTemp(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('gpu_temp', history=True)
+
+
+class MangoHudGPUJunctionTemp(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('gpu_junction_temp', history=True)
+
+
+class MangoHudGPUPower(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('gpu_power', history=True)
+
+
+class MangoHudCPULoad(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('cpu_load', history=False)
+
+
+class MangoHudCPUPower(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('cpu_power', history=False)
+
+
+class MangoHudCPUTemp(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('cpu_temp', history=False)
+
+
+class MangoHudGPUVramUsed(_MangoHudBaseSensor):
+    def __init__(self):
+        super().__init__('gpu_vram_used', history=False)
 
 
 # MangoHud 0.1% Low FPS - displays the 0.1% low FPS metric

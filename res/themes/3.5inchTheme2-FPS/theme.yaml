@@ -15,156 +15,114 @@ static_images:
 static_text:
   FPS_LABEL:
     TEXT: "FPS:"
-    X: 150
+    X: 10
     Y: 340
     FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
     FONT_SIZE: 23
     FONT_COLOR: 255, 255, 255
-    BACKGROUND_COLOR: 132, 154, 165
-    ALIGN: left
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
   FPS_LABEL_1LOW:
     TEXT: "1.0%:"
-    X: 136
-    Y: 370
-    WIDTH: 100
-    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-    FONT_SIZE: 23
-    FONT_COLOR: 255, 255, 255
-    BACKGROUND_COLOR: 132, 154, 165
-    
-  FPS_LABEL_01LOW:
-    TEXT: "0.1%:"
-    X: 136
+    X: 10
     Y: 400
-    WIDTH: 70
+    WIDTH: 80
     FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
     FONT_SIZE: 23
     FONT_COLOR: 255, 255, 255
-    BACKGROUND_COLOR: 132, 154, 165
+    BACKGROUND_COLOR: 0, 170, 255
+  FPS_LABEL_AVG:
+    TEXT: "AVG:"
+    X: 10
+    Y: 370
+    WIDTH: 80
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
+  CPU_LABEL_LOAD:
+    TEXT: "CPU%:"
+    X: 10
+    Y: 24
+    WIDTH: 60
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
+  CPU_LABEL_TEMP:
+    TEXT: "C-T:"
+    X: 10
+    Y: 54
+    WIDTH: 60
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
+  CPU_LABEL_POWER:
+    TEXT: "C-P:"
+    X: 10
+    Y: 84
+    WIDTH: 60
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
+  GPU_LABEL_LOAD:
+    TEXT: "GPU%:"
+    X: 10
+    Y: 150
+    WIDTH: 60
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
+  GPU_LABEL_TEMP:
+    TEXT: "G-T:"
+    X: 10
+    Y: 180
+    WIDTH: 60
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
+  GPU_LABEL_JUNC:
+    TEXT: "GJ:"
+    X: 10
+    Y: 210
+    WIDTH: 60
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
+  GPU_LABEL_POWER:
+    TEXT: "G-P:"
+    X: 10
+    Y: 240
+    WIDTH: 60
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
+    ALIGN: right
+  GPU_LABEL_VRAM:
+    TEXT: "VRAM:"
+    X: 10
+    Y: 270
+    WIDTH: 60
+    FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+    FONT_SIZE: 23
+    FONT_COLOR: 255, 255, 255
+    BACKGROUND_COLOR: 0, 170, 255
     ALIGN: right
     
 STATS:
-  CPU:
-    PERCENTAGE:
-      INTERVAL: 1
-      TEXT:
-        SHOW: True
-        SHOW_UNIT: True
-        X: 250
-        Y: 24
-        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-        FONT_SIZE: 23
-        FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-      GRAPH:
-        SHOW: True
-        X: 155
-        Y: 55
-        WIDTH: 150
-        HEIGHT: 15
-        MIN_VALUE: 0
-        MAX_VALUE: 100
-        BAR_COLOR: 0, 0, 255
-        BAR_OUTLINE: False
-        BACKGROUND_COLOR: 0, 0, 0
-    FREQUENCY:
-      INTERVAL: 5
-      TEXT:
-        SHOW: True
-        SHOW_UNIT: True
-        X: 154
-        Y: 82
-        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-        FONT_SIZE: 30
-        FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-    TEMPERATURE:
-      INTERVAL: 5
-      TEXT:
-        SHOW: True
-        SHOW_UNIT: True
-        X: 154
-        Y: 24
-        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-        FONT_SIZE: 23
-        FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-  GPU:
-    INTERVAL: 1
-    PERCENTAGE:
-      GRAPH:
-        SHOW: True
-        X: 155
-        Y: 175
-        WIDTH: 150
-        HEIGHT: 15
-        MIN_VALUE: 0
-        MAX_VALUE: 100
-        BAR_COLOR: 0, 0, 255
-        BAR_OUTLINE: False
-        BACKGROUND_COLOR: 0, 0, 0
-      TEXT:
-        SHOW: TRUE
-        SHOW_UNIT: True
-        X: 250
-        Y: 146
-        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-        FONT_SIZE: 23
-        FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-    MEMORY:
-      TEXT:
-        SHOW: TRUE
-        SHOW_UNIT: True
-        X: 204
-        Y: 201
-        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-        FONT_SIZE: 23
-        FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-    TEMPERATURE:
-      TEXT:
-        SHOW: TRUE
-        SHOW_UNIT: True
-        X: 154
-        Y: 146
-        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-        FONT_SIZE: 23
-        FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-  MEMORY:
-    INTERVAL: 5
-    VIRTUAL:
-      GRAPH:
-        SHOW: True
-        X: 155
-        Y: 270
-        WIDTH: 150
-        HEIGHT: 15
-        MIN_VALUE: 0
-        MAX_VALUE: 100
-        BAR_COLOR: 0, 0, 255
-        BAR_OUTLINE: False
-        BACKGROUND_COLOR: 0, 0, 0
-      USED:
-        SHOW: TRUE
-        SHOW_UNIT: True
-        X: 204
-        Y: 296
-        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-        FONT_SIZE: 23
-        FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-      PERCENT_TEXT:
-        SHOW: TRUE
-        SHOW_UNIT: True
-        X: 250
-        Y: 246
-        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
-        FONT_SIZE: 23
-        FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-
   DATE:
     INTERVAL: 1
     DAY:
@@ -175,7 +133,7 @@ STATS:
         FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
         FONT_SIZE: 10
         FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
+        BACKGROUND_COLOR: 0, 170, 255
         WIDTH: 90
         ANCHOR: lm
     HOUR:
@@ -195,33 +153,121 @@ STATS:
     MangoHudFPS:
       TEXT:
         SHOW: True
-        X: 212
+        X: 80
         Y: 341
         WIDTH: 61
         HEIGHT: 23
         FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
         FONT_SIZE: 23
         FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-    MangoHud1PercentLow:
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudFPSAvg:
       TEXT:
         SHOW: True
-        X: 212
+        X: 90
         Y: 371
         WIDTH: 61
         HEIGHT: 23
         FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
         FONT_SIZE: 23
         FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
-    MangoHudZeroOnePercentLow:
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHud1PercentLow:
       TEXT:
         SHOW: True
-        X: 212
+        X: 90
         Y: 401
         WIDTH: 61
         HEIGHT: 23
         FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
         FONT_SIZE: 23
         FONT_COLOR: 255, 255, 255
-        BACKGROUND_COLOR: 132, 154, 165
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudGPULoad:
+      TEXT:
+        SHOW: True
+        X: 80
+        Y: 150
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudGPUTemp:
+      TEXT:
+        SHOW: True
+        X: 80
+        Y: 180
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudGPUJunctionTemp:
+      TEXT:
+        SHOW: True
+        X: 80
+        Y: 210
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudGPUPower:
+      TEXT:
+        SHOW: True
+        X: 80
+        Y: 240
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudCPULoad:
+      TEXT:
+        SHOW: True
+        X: 80
+        Y: 24
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudCPUTemp:
+      TEXT:
+        SHOW: True
+        X: 80
+        Y: 54
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudCPUPower:
+      TEXT:
+        SHOW: True
+        X: 80
+        Y: 80
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_COLOR: 0, 170, 255
+    MangoHudGPUVramUsed:
+      TEXT:
+        SHOW: True
+        X: 80
+        Y: 270
+        WIDTH: 61
+        HEIGHT: 23
+        FONT: jetbrains-mono/JetBrainsMono-Bold.ttf
+        FONT_SIZE: 23
+        FONT_COLOR: 255, 255, 255
+        BACKGROUND_COLOR: 0, 170, 255

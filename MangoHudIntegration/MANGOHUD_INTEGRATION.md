@@ -1,43 +1,68 @@
 # MangoHud FPS Integration Guide
 
-This guide explains how to integrate MangoHud FPS data into your Turing Smart Screen.
+This guide explains how to use MangoHud FPS data with the shared `MangoSocketReader` library in this project.
 
 ## Prerequisites
 
-1. **MangoHud** must be installed with the FPS socket feature
-2. **FPS socket enabled** in MangoHud config: `fps_socket=1`
-3. **Game launched with MangoHud** (e.g., `mangohud <game>`)
+- **MangoHud** installed with FPS socket support
+- **Enable** `fps_socket=1` in `~/.config/MangoHud/MangoHud.conf`
+- Launch your game with MangoHud (e.g., `mangohud <game>`)
 
-## Installation Steps
+## What’s Included
 
-### Step 1: Update sensors_custom.py
+- The sensor class `MangoHudFPS` in `library/sensors/sensors_custom.py` already integrates with `mangosocketreader.client.MangoHudClient`.
+- Protocol: 48-byte payload (`'=dfffiiiiiff'`, version `1.0`). Provides `fps`, `fps_avg`, temps, loads, power, and `fps_1_percent_low`.
+- Note: `0.1% low` is not present in this payload; it will display `0.0` or `---` unless added by the server in a future version.
 
-Open `library/sensors/sensors_custom.py` and make the following changes:
+## Install the shared library
 
-#### 1.1 Add imports (after line 25)
+Install `MangoSocketReader` into the same venv used by this app and by the systemd service:
 
-Add these imports after the existing imports:
-```python
-import socket
-import struct
-import time
-from typing import Optional
+```bash
+# Using the app's interpreter (recommended)
+/home/oliverzein/Dokumente/Daten/Development/Python/turing-smart-screen-python-mangohud/.venv/bin/python3 -m pip install -e /home/oliverzein/Dokumente/Daten/Development/Python/MangoSocketReader
+
+# Verify
+/home/oliverzein/Dokumente/Daten/Development/Python/turing-smart-screen-python-mangohud/.venv/bin/python3 -c "import mangosocketreader, struct; import mangosocketreader.protocol as p; print(p.PACKET_VERSION, struct.calcsize(p.PACKET_FORMAT))"
+# Expect: 1.0 48
 ```
 
-The imports section should look like:
-```python
-import math
-import platform
-import socket
-import struct
-import time
-from abc import ABC, abstractmethod
-from typing import List, Optional
+Optional: pin it in `requirements.txt` for reproducible installs:
+
+```
+mangosocketreader @ file:///home/oliverzein/Dokumente/Daten/Development/Python/MangoSocketReader
 ```
 
-#### 1.2 MangoHudFPS class
+## Test the integration
 
-The MangoHudFPS class is already integrated at the end of `sensors_custom.py`, after the `ExampleCustomTextOnlyData` class.
+Run the provided test script:
+
+```bash
+python MangoHudIntegration/test_mangohud_fps.py
+```
+
+Example output:
+
+```
+Time     | Status       | FPS      | 1% Low   | 0.1% Low
+----------------------------------------------------------------------
+12:34:56 | PID 12345    | 120.0    | 100.5    | 0.0
+```
+
+## Service notes
+
+The systemd unit `MangoHudIntegration/turing-smart-screen-python.service` runs with the project venv.
+
+- Install `MangoSocketReader` with the same interpreter as above so the service can import it.
+- Restart after changes:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart turing-smart-screen-python.service
+sudo journalctl -u turing-smart-screen-python.service -n 100 -f
+```
+
+If the service shows `---` but the test script works, re-check that you installed the library using the exact service interpreter (`python -m pip`).
 
 **Key features:**
 - **Singleton pattern (per-process)**: One instance per process, persistent connection
